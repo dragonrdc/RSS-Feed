@@ -1,0 +1,101 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Xml;
+using System.Xml.Linq;
+using RSSParser;
+
+namespace RSSParser._contols
+{
+    
+    public partial class CampPosts : System.Web.UI.UserControl
+    {
+
+        public string Camp { get; set; }
+        public string Unit { get; set; }
+        public string Group { get; set; }
+
+
+        protected void Page_Load(object sender, EventArgs e)
+        {           
+            
+            getRSS(this.Camp, this.Unit, this.Group);
+        }
+
+
+        private void getRSS(string Camp, string Unit, string Group)
+        {
+            if (Camp == "Yomi") //could also use "switch" statement
+            {
+                lit_CampMessage.Text = "Hello Yomi Camper";
+                lit_CampMessage.Visible = true;
+            }
+
+            
+
+            //code to parse RSS;
+
+            XDocument docs = XDocument.Load("http://92ypost.org/?feed=rss2&cat=68");
+            XNamespace content = "http://purl.org/rss/1.0/modules/content/";
+
+            var query = (from feed in docs.Descendants("item")
+                         orderby DateTime.Parse(feed.Element("pubDate").Value) descending
+                         select new FeedItem
+                         {
+                             title = feed.Element("title").Value,
+                          categories = (from f in feed.Descendants("category")
+                                           select new Category
+                                           {
+                                               description = HttpUtility.HtmlDecode(f.Element("category").Value),
+
+                                           }),
+
+                             content = HttpUtility.HtmlDecode(feed.Element(content.GetName("encoded")).Value),
+                             pubDate = DateTime.Parse(feed.Element("pubDate").Value),
+
+                             
+                         });
+            
+
+        }
+
+    }
+
+    public class FeedItem
+    {
+
+        public int id { get; set; }
+        public string title { get; set; }
+        public DateTime pubDate { get; set; }
+        public IEnumerable<Category> categories { get; set; }
+        public string content { get; set; }
+
+        public FeedItem(int id, DateTime pubDate, string title, string content, IEnumerable<Category> categories)
+        {
+            this.id = id;
+            this.pubDate = pubDate;
+            this.title = title;
+            this.content = content;
+            this.categories = categories;
+
+        }
+
+        public FeedItem()
+        {
+        }
+
+    }
+
+    public class Category
+    {
+
+        public string description { get; set; }
+
+        public Category()
+        {
+        }
+    }
+}
